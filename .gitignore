@@ -6,4 +6,4 @@ jspm_packages
 .serverless
 
 # Databases
-databases
+databases/*.json
