@@ -12,34 +12,21 @@
 # Happy Coding!
 
 service: NearBot
-
-# You can pin your service to only deploy with a specific Serverless version
-# Check out our docs for more details
-# frameworkVersion: "=X.X.X"
+app: nearbot
+tenant: elizabethdev
 
 provider:
   name: aws
-  runtime: nodejs6.10
+  runtime: nodejs8.10
+  region: eu-west-1
+  endpointType: REGIONAL
 
-# you can overwrite defaults here
-#  stage: dev
-#  region: us-east-1
-
-# you can add statements to the Lambda function's IAM Role here
-#  iamRoleStatements:
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:ListBucket"
-#      Resource: { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "ServerlessDeploymentBucket" } ] ]  }
-#    - Effect: "Allow"
-#      Action:
-#        - "s3:PutObject"
-#      Resource:
-#        Fn::Join:
-#          - ""
-#          - - "arn:aws:s3:::"
-#            - "Ref" : "ServerlessDeploymentBucket"
-#            - "/*"
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:Query
+      Resource: "arn:aws:dynamodb:eu-west-1:*:*"
 
 # you can define service wide environment variables here
 #  environment:
@@ -55,8 +42,15 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  hello:
-    handler: handler.hello
+  NearBot_Madrid:
+    name: ${self:provider.stage}-NearBot_Madrid
+    description: Madrid instance of NearBot
+    handler: handler.telegram
+    memorySize: 128
+    events:
+      - http:
+          path: dev-NearBot_Madrid
+          method: post
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
