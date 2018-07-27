@@ -21,11 +21,11 @@
   },
   "homepage": "https://github.com/elizabeth-dev/NearBot#readme",
   "dependencies": {
+    "aws-sdk": "^2.282.1",
     "botgram": "^2.1.0",
     "dynamodb-geo": "^0.4.0"
   },
   "devDependencies": {
-    "aws-sdk": "^2.282.1",
     "eslint": "^5.2.0",
     "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^3.8.0"
