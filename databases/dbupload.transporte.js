@@ -12,8 +12,8 @@ const gtManager = new ddbGeo.GeoDataManager(config)
 
 // Configure DynamoDB table
 const createTable = ddbGeo.GeoTableUtil.getCreateTableRequest(config)
-createTable.ProvisionedThroughput.ReadCapacityUnits = 15
-createTable.ProvisionedThroughput.WriteCapacityUnits = 15
+createTable.ProvisionedThroughput.ReadCapacityUnits = 5
+createTable.ProvisionedThroughput.WriteCapacityUnits = 5
 
 console.log('Table with schema:')
 console.dir(createTable, { depth: null })
@@ -25,7 +25,7 @@ ddb.createTable(createTable).promise()
 	// Load data
 	.then(function () {
 		console.log('Loading from listaTransporte.json')
-		const data = require('./databases/listaTransporte.json')
+		const data = require('./listaTransporte.json')
 		const putPointsInputs = data.map(function (estacion) {
 			return {
 				RangeKeyValue: { S: estacion.CODIGOINTERCAMBIADOR.toString() },
@@ -38,7 +38,9 @@ ddb.createTable(createTable).promise()
 						denominacionMetro: AWS.DynamoDB.Converter.input(estacion.DENOMINACIONMETRO),
 						denominacionCercanias: AWS.DynamoDB.Converter.input(estacion.DENOMINACIONCERCANIAS),
 						denominacionLigero: AWS.DynamoDB.Converter.input(estacion.DENOMINACIONLIGERO),
-						lineas: AWS.DynamoDB.Converter.input(estacion.LINEAS),
+						lineasMetro: AWS.DynamoDB.Converter.input(estacion.LINEASMETRO),
+						lineasLigero: AWS.DynamoDB.Converter.input(estacion.LINEASLIGERO),
+						lineasCercanias: AWS.DynamoDB.Converter.input(estacion.LINEASCERCANIAS),
 						modos: AWS.DynamoDB.Converter.input(estacion.MODOS)
 					}
 				}
