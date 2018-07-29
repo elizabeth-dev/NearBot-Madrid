@@ -18,7 +18,8 @@ const regex = {
 	cercanias: 'Vamos a buscar estaciones de cercanías. ',
 	metroligero: 'Vamos a buscar estaciones de metro ligero. ',
 	transporte: 'Vamos a buscar estaciones de cualquier medio de transporte. ',
-	fuente: 'Vamos a buscar fuentes de agua. '
+	fuente: 'Vamos a buscar fuentes de agua. ',
+	bici: 'Vamos a buscar bases de BiciMAD. '
 }
 
 // Keyboard used to request location
@@ -187,7 +188,36 @@ async function processFuente(msg, reply, results) {
 	}
 }
 
-bot.command('metro', 'cercanias', 'metroligero', 'transporte', 'fuente', (msg, reply) => {
+async function processBici(msg, reply, results) {
+	if (results.length === 0) { // If no results found
+		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ninguna estación de BiciMAD.')
+	} else {
+		let result = null
+		let distance = null
+		if (results.length === 1) { // If a unique result found
+			result = results[0]
+			distance = Math.round(calcDistance(msg, result) * 100000) / 100
+		} else { // If more than one result is found, search for the nearest
+			let nearest = 0
+			distance = calcDistance(msg, results[nearest])
+			for (let i = 1; i < results.length; i++) {
+				let newDistance = calcDistance(msg, results[i])
+				
+				if (newDistance < distance) { // If the new calculated distance is les than the actual nearest distance, replace it
+					nearest = i
+					distance = newDistance
+				}
+			}
+			result = results[nearest]
+			distance = Math.round(distance * 100000) / 100
+		}
+
+		reply.keyboard().text('La estación de BiciMAD más cercana es:')
+		reply.markdown('🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n' + result.calle.S)
+	}
+}
+
+bot.command('metro', 'cercanias', 'metroligero', 'transporte', 'fuente', 'bici', (msg, reply) => {
 	reply.keyboard(locationKeyboard, true).text(regex[msg.command] + 'Toca en el botón inferior para enviar tu ubicación.')
 })
 
@@ -262,6 +292,17 @@ bot.location((msg, reply) => {
 
 		searchQuery(msg, fuenteDB, 100, fuenteRadius, filter, (results) => {
 			processFuente(msg, reply, results)
+		})
+	} else if (RegExp('^' + regex.bici).test(msg.reply.text)) {
+		// Initialize the DB client
+		let biciConfig = new ddbGeo.GeoDataManagerConfiguration(ddb, 'NearBot_Madrid_Bici')
+		biciConfig.hashKeyLength = 8
+		let biciDB = new ddbGeo.GeoDataManager(biciConfig)
+		let filter = {}
+		let biciRadius = 800
+
+		searchQuery(msg, biciDB, 100, biciRadius, filter, (results) => {
+			processBici(msg, reply, results)
 		})
 	}
 })
