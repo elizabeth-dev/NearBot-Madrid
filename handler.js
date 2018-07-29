@@ -14,12 +14,17 @@ const converter = AWS.DynamoDB.Converter.output
 
 const regex = {
 	mediosTransporte: 'Vamos a buscar estaciones de ',
+	marcasSupermercado: 'Vamos a buscar el supermercado ',
 	metro: 'Vamos a buscar estaciones de metro. ',
 	cercanias: 'Vamos a buscar estaciones de cercanías. ',
 	metroligero: 'Vamos a buscar estaciones de metro ligero. ',
 	transporte: 'Vamos a buscar estaciones de cualquier medio de transporte. ',
 	fuente: 'Vamos a buscar fuentes de agua. ',
-	bici: 'Vamos a buscar bases de BiciMAD. '
+	bici: 'Vamos a buscar bases de BiciMAD. ',
+	aseo: 'Vamos a buscar el aseo más cercano. ',
+	carrefour: 'Vamos a buscar el supermercado Carrefour más cercano. ',
+	mercadona: 'Vamos a buscar el supermercado Mercadona más cercano. ',
+	supermercado: 'Vamos a buscar el supermercado más cercano. '
 }
 
 // Keyboard used to request location
@@ -32,6 +37,10 @@ function toTitleCase(str) {
 	return str.replace(/\w\S*/g, function(txt){
 			return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 	});
+}
+
+function transformHour(hora) {
+	return hora.slice(0, hora.length-2) + ':' + hora.slice(hora.length-2, hora.length)
 }
 
 // Function for querying the DB
@@ -184,7 +193,7 @@ async function processFuente(msg, reply, results) {
 		}
 
 		reply.keyboard().text('La fuente más cercana es:')
-		reply.markdown('🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n' + toTitleCase(calle))
+		reply.markdown('🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle))
 	}
 }
 
@@ -213,17 +222,94 @@ async function processBici(msg, reply, results) {
 		}
 
 		reply.keyboard().text('La estación de BiciMAD más cercana es:')
-		reply.markdown('🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n' + result.calle.S)
+		reply.markdown('🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n\n' + result.calle.S)
 	}
 }
 
-bot.command('metro', 'cercanias', 'metroligero', 'transporte', 'fuente', 'bici', (msg, reply) => {
+async function processAseo(msg, reply, results) {
+	if (results.length === 0) { // If no results found
+		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ningún aseo cercano.')
+	} else {
+		let result = null
+		let distance = null
+		if (results.length === 1) { // If a unique result found
+			result = results[0]
+			distance = Math.round(calcDistance(msg, result) * 100000) / 100
+		} else { // If more than one result is found, search for the nearest
+			let nearest = 0
+			distance = calcDistance(msg, results[nearest])
+			for (let i = 1; i < results.length; i++) {
+				let newDistance = calcDistance(msg, results[i])
+				
+				if (newDistance < distance) { // If the new calculated distance is les than the actual nearest distance, replace it
+					nearest = i
+					distance = newDistance
+				}
+			}
+			result = results[nearest]
+			distance = Math.round(distance * 100000) / 100
+		}
+
+		let descripcion = ''
+		if (result.descripcion) {
+			descripcion = result.descripcion.S
+		}
+
+		reply.keyboard().text('El aseo más cercano es:')
+		reply.markdown('🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion)
+	}
+}
+
+async function processSuper(marca, msg, reply, results) {
+	if (results.length === 0) { // If no results found
+		reply.keyboard().text('Parece que estás bastante lejos de la ciudad. No hemos logrado encontrar ningún ' + marca + ' cercano.')
+	} else {
+		let result = null
+		let distance = null
+		if (results.length === 1) { // If a unique result found
+			result = results[0]
+			distance = Math.round(calcDistance(msg, result) * 100000) / 100
+		} else { // If more than one result is found, search for the nearest
+			let nearest = 0
+			distance = calcDistance(msg, results[nearest])
+			for (let i = 1; i < results.length; i++) {
+				let newDistance = calcDistance(msg, results[i])
+				
+				if (newDistance < distance) { // If the new calculated distance is les than the actual nearest distance, replace it
+					nearest = i
+					distance = newDistance
+				}
+			}
+			result = results[nearest]
+			distance = Math.round(distance * 100000) / 100
+		}
+
+		let day = new Date().getDay()
+		let arrayHorarios = converter(result.horario.L[day])
+		let horario = ''
+		if (arrayHorarios[0][0] === 0) {
+			horario = ' Cerrado hoy'
+		} else {
+			for (let i = 0; i < arrayHorarios[0].length; i++) {
+				horario = (horario + ' ' + transformHour(arrayHorarios[0][i].toString()) + 'h - ' + transformHour(arrayHorarios[1][i].toString()) + 'h ').replace('  ', ', ')
+			}
+		}
+
+		let descripcion = ''
+		if (result.descripcion) {
+			descripcion = '\n' + result.descripcion.S
+		}
+		reply.keyboard().text('El ' + marca + ' más cercano es:')
+		reply.markdown('🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario)
+	}
+}
+
+bot.command('metro', 'cercanias', 'metroligero', 'transporte', 'fuente', 'bici', 'aseo', 'carrefour', 'mercadona', 'supermercado', (msg, reply) => {
 	reply.keyboard(locationKeyboard, true).text(regex[msg.command] + 'Toca en el botón inferior para enviar tu ubicación.')
 })
 
 bot.location((msg, reply) => {
-	// If message requests a transport station
-	if (RegExp('^' + regex.mediosTransporte).test(msg.reply.text)) {
+	if (RegExp('^' + regex.mediosTransporte).test(msg.reply.text)) { // If message requests a transport station
 		// Initialize the DB client
 		let transporteConfig = new ddbGeo.GeoDataManagerConfiguration(ddb, 'NearBot_Madrid_Transporte')
 		transporteConfig.hashKeyLength = 8
@@ -282,7 +368,46 @@ bot.location((msg, reply) => {
 				})
 				break
 		}
-	} else if (RegExp('^' + regex.fuente).test(msg.reply.text)) {
+	} else if (RegExp('^' + regex.marcasSupermercado).test(msg.reply.text)) { // If message requests a supermarket
+		// Initialize the DB client
+		let supermercadoConfig = new ddbGeo.GeoDataManagerConfiguration(ddb, 'NearBot_Madrid_Supermercado')
+		supermercadoConfig.hashKeyLength = 9
+		let supermercadoDB = new ddbGeo.GeoDataManager(supermercadoConfig)
+		let filter = {}
+		let supermercadoRadius = 3200
+
+		switch (true) {
+			case RegExp('^' + regex.carrefour).test(msg.reply.text):
+				filter = {
+					QueryInput: {
+						FilterExpression: '#marca = :type',
+						ExpressionAttributeNames: { '#marca': 'marca' },
+						ExpressionAttributeValues: { ':type': { 'S': 'Carrefour' } }
+					}
+				}
+				searchQuery(msg, supermercadoDB, 200, supermercadoRadius, filter, (results) => {
+					processSuper('Carrefour', msg, reply, results)
+				})
+				break
+			case RegExp('^' + regex.mercadona).test(msg.reply.text):
+				filter = {
+					QueryInput: {
+						FilterExpression: '#marca = :type',
+						ExpressionAttributeNames: { '#marca': 'marca' },
+						ExpressionAttributeValues: { ':type': { 'S': 'Mercadona' } }
+					}
+				}
+				searchQuery(msg, supermercadoDB, 200, supermercadoRadius, filter, (results) => {
+					processSuper('Mercadona', msg, reply, results)
+				})
+				break
+			case RegExp('^' + regex.supermercado).test(msg.reply.text):
+				searchQuery(msg, supermercadoDB, 200, supermercadoRadius, filter, (results) => {
+					processSuper('supermercado', msg, reply, results)
+				})
+				break
+		}
+	} else if (RegExp('^' + regex.fuente).test(msg.reply.text)) { // If message requests a water fountain
 		// Initialize the DB client
 		let fuenteConfig = new ddbGeo.GeoDataManagerConfiguration(ddb, 'NearBot_Madrid_Fuente')
 		fuenteConfig.hashKeyLength = 9
@@ -293,7 +418,7 @@ bot.location((msg, reply) => {
 		searchQuery(msg, fuenteDB, 100, fuenteRadius, filter, (results) => {
 			processFuente(msg, reply, results)
 		})
-	} else if (RegExp('^' + regex.bici).test(msg.reply.text)) {
+	} else if (RegExp('^' + regex.bici).test(msg.reply.text)) { // If message requests a bike station
 		// Initialize the DB client
 		let biciConfig = new ddbGeo.GeoDataManagerConfiguration(ddb, 'NearBot_Madrid_Bici')
 		biciConfig.hashKeyLength = 8
@@ -303,6 +428,17 @@ bot.location((msg, reply) => {
 
 		searchQuery(msg, biciDB, 100, biciRadius, filter, (results) => {
 			processBici(msg, reply, results)
+		})
+	} else if (RegExp('^' + regex.aseo).test(msg.reply.text)) { // If message requests a WC
+		// Initialize the DB client
+		let aseoConfig = new ddbGeo.GeoDataManagerConfiguration(ddb, 'NearBot_Madrid_Aseo')
+		aseoConfig.hashKeyLength = 9
+		let aseoDB = new ddbGeo.GeoDataManager(aseoConfig)
+		let filter = {}
+		let aseoRadius = 800
+
+		searchQuery(msg, aseoDB, 100, aseoRadius, filter, (results) => {
+			processAseo(msg, reply, results)
 		})
 	}
 })
