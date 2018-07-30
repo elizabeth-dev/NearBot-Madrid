@@ -74,7 +74,7 @@ function calcDistance(coordinates, result) {
 async function getResult(coordinates, results, callback) { // Gets the results array and returns the nearest
 	let distance = null
 	if (results.length === 1) { // If a unique result found
-		return callback(results[0], Math.round(calcDistance(coordinates, results[0]) * 100000) / 100)
+		return callback(results[0], Math.round(calcDistance(coordinates, results[0]) * 100000) / 100) // Round the distance to meters
 	} else { // If more than one result is found, search for the nearest
 		let nearest = 0
 		distance = calcDistance(coordinates, results[nearest])
@@ -82,7 +82,7 @@ async function getResult(coordinates, results, callback) { // Gets the results a
 		for (let i = 1; i < results.length; i++) {
 			let newDistance = calcDistance(coordinates, results[i])
 			
-			if (newDistance < distance) { // If the new calculated distance is les than the actual nearest distance, replace it
+			if (newDistance < distance) { // If the new calculated distance is less than the actual nearest distance, replace it
 				nearest = i
 				distance = newDistance
 			}
@@ -91,12 +91,12 @@ async function getResult(coordinates, results, callback) { // Gets the results a
 	}
 }
 
-async function processTransport(mode, coordinates, reply, results) {
+async function processTransport(mode, coordinates, reply, results) { // Process transport requests
 	if (results.length === 0) { // If no results found
 		reply.keyboard().text('Parece que estás bastante lejos de la ciudad. No hemos logrado encontrar ninguna estación de ' + mode + ' cercana.')
 	} else {
 		getResult(coordinates, results, (result, distance) => {
-			switch(mode) {
+			switch(mode) { // Set the principal station mode
 				case 'metro':
 				var denominacionPrincipal = result.denominacionMetro.S
 				var lineasPrincipal = '\nLíneas Metro: _' + converter(result.lineasMetro).sort().toString().replace(/,/g, '_, _') + '_'
@@ -135,6 +135,7 @@ async function processTransport(mode, coordinates, reply, results) {
 			let denominacionSecundaria = ''
 			let lineasSecundaria = ''
 			
+			// Set the secondary station modes
 			if (result.denominacionMetro && mode !== 'metro') {
 				if (result.denominacionMetro.S !== denominacionPrincipal) {
 					denominacionSecundaria = '\n🚇 Metro: ' + result.denominacionMetro.S
@@ -160,6 +161,7 @@ async function processTransport(mode, coordinates, reply, results) {
 				lineasSecundaria = lineasSecundaria + '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
 			}
 			
+			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('Esta es la estación de ' + mode + ' más cercana:')
 			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, modos + ' *' + denominacionPrincipal + '* (_' + distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
@@ -173,10 +175,11 @@ async function processFuente(coordinates, reply, results) {
 	} else {
 		getResult(coordinates, results, (result, distance) => {
 			let calle = ''
-			if (result.calle) {
+			if (result.calle) { // If there's no "street" value, skip it
 				calle = result.calle.S
 			}
 			
+			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('La fuente más cercana es:')
 			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
@@ -189,6 +192,7 @@ async function processBici(coordinates, reply, results) {
 		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ninguna estación de BiciMAD.')
 	} else {
 		getResult(coordinates, results, (result, distance) => {
+			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('La estación de BiciMAD más cercana es:')
 			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n\n' + result.calle.S, 'Markdown')
@@ -202,10 +206,11 @@ async function processAseo(coordinates, reply, results) {
 	} else {
 		getResult(coordinates, results, (result, distance) => {
 			let descripcion = ''
-			if (result.descripcion) {
+			if (result.descripcion) { // If there's no "descripcion" value, skip it
 				descripcion = result.descripcion.S
 			}
 			
+			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('El aseo más cercano es:')
 			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
@@ -218,6 +223,7 @@ async function processSuper(marca, coordinates, reply, results) {
 		reply.keyboard().text('Parece que estás bastante lejos de la ciudad. No hemos logrado encontrar ningún ' + marca + ' cercano.')
 	} else {
 		getResult(coordinates, results, (result, distance) => {
+			// Get the opening hours for the current day
 			let day = new Date().getDay()
 			let arrayHorarios = converter(result.horario.L[day])
 			let horario = ''
@@ -230,10 +236,11 @@ async function processSuper(marca, coordinates, reply, results) {
 			}
 			
 			let descripcion = ''
-			if (result.descripcion) {
+			if (result.descripcion) { // If there's not "descripcion" value, skip it
 				descripcion = '\n' + result.descripcion.S
 			}
 			
+			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('El ' + marca + ' más cercano es:')
 			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
@@ -246,21 +253,24 @@ bot.command('start', 'help', (msg, reply) => {
 	reply.markdown('¡Hola! Soy NearBot. Puedes pedirme que busque sitios (como por ejemplo, supermercados) en Madrid y te responderé con la información y la localización del que tengas más cerca.\n\nPara ello, puedes enviarme tu ubicación y seleccionar el sitio que desees buscar en el menú que aparecerá, o puedes enviarme uno de estos comandos:\n\n*Medios de transporte*\n/transporte - Busca una estación de cualquier medio de transporte (no incluye bici)\n/metro - Busca una estación de metro\n/cercanias - Busca una estación de cercanías\n/metroligero - Busca una estación de metro ligero\n/bici - Busca una estación de BiciMAD\n\n*Supermercados*\n/supermercado - Busca un supermercado de cualquier marca\n/carrefour - Busca un supermercado Carrefour\n/mercadona - Busca un supermercado Mercadona\n\n*Otros*\n/fuente - Busca una fuente de agua potable en Madrid\n/aseo - Busca un aseo público en Madrid\n\n*Más comandos*\n/help - Vuelve a mostrar este mensaje\n/info - Muestra información del bot\n/novedades - Muestra los cambios añadidos recientemente al bot\n\nCada cierto tiempo, me iré actualizando automáticamente, añadiendo sitios y funcionalidades nuevas, usa el comando /novedades para ver los cambios recientes.')
 })
 
+// Show bot license and info
 bot.command('info', (msg, reply) => {
 	reply.disablePreview().markdown('*NearBot Madrid*\nVersión 1.0 (30/07/2018)\n\nTiempo de ejecución Node.js v8.10 junto al framework para bots [Botgram](https://github.com/botgram/botgram) v2.1.0.\n\nEste bot es software libre y está licenciado bajo [GNU AGPL v3.0](https://github.com/elizabeth-dev/NearBot-Madrid/blob/master/LICENSE.md), lo cuál significa que puedes modificarlo y redistribuirlo libremente conforme a los términos de la licencia. Asimismo, se distribuye sin ninguna garantía ni responsabilidad.\n\nPuedes obtener más informacion sobre el funcionamiento del bot, su código fuente, y su licencia en su repositorio de GitHub [NearBot-Madrid](https://github.com/elizabeth-dev/NearBot-Madrid).\n\nAdemás, puedes contactar con su creadora por [Twitter](https://twitter.com/Eli_coptero_), o por [Telegram](tg://user?id=74460537).\n\n_Elizabeth Martín Campos_\nhttps://eli.zabeth.es/')
 })
 
+// Show what's new in the last update
 bot.command('novedades', (msg, reply) => {
 	reply.markdown('Esta es la primera versión publicada de NearBot Madrid.\n\nAún no hay ninguna novedad, pero dentro de poco se publicará la versión 2.0, la cuál añadirá mejoras en cuanto a los horarios de los resultados, la integración con la API pública de BiciMAD, o el rendimiento general del bot, entre otras.\n\nVuelve pronto para comprobar si ya se ha publicado la actualización.')
 })
 
+// Place request
 bot.command('metro', 'cercanias', 'metroligero', 'transporte', 'fuente', 'bici', 'aseo', 'carrefour', 'mercadona', 'supermercado', (msg, reply) => {
 	reply.keyboard([[{ text: '📌 Enviar mi ubicación', request: 'location' }]], true).text(regex[msg.command] + 'Toca en el botón inferior para enviar tu ubicación.')
 })
 
 bot.location((msg, reply) => {
 	let coordinates = [msg.latitude, msg.longitude]
-	if (msg.reply) {
+	if (msg.reply) { // If the location is a reply to a message (serverless tricks)
 		let config = { filter: {} }
 		
 		if (RegExp('^' + regex.mediosTransporte).test(msg.reply.text)) { // If message requests a transport station
@@ -393,7 +403,7 @@ bot.location((msg, reply) => {
 				processAseo(coordinates, reply, results)
 			})
 		}
-	} else {
+	} else { // If the user sends their location and wants to pick a place
 		reply.inlineKeyboard([
 			[{ text: 'Transporte', callback_data: JSON.stringify({ t: 'tte_menu', c: coordinates, i: msg.chat.id }) }],
 			[{ text: 'Supermercado', callback_data: JSON.stringify({ t: 'spr_menu', c: coordinates, i: msg.chat.id }) }],
