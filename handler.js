@@ -156,9 +156,9 @@ async function processTransport(mode, msg, reply, results) {
 				lineasSecundaria = lineasSecundaria + '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
 			}
 			
-			let coordinates = JSON.parse(result.geoJson.S).coordinates
+			let coordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('Esta es la estación de ' + mode + ' más cercana:')
-			reply.photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates[1] + ',' + coordinates[0] + '&key=' + mapsKey, modos + ' *' + denominacionPrincipal + '* (_' + distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + coordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates + '&key=' + mapsKey, modos + ' *' + denominacionPrincipal + '* (_' + distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
 		})
 	}
 }
@@ -173,9 +173,9 @@ async function processFuente(msg, reply, results) {
 				calle = result.calle.S
 			}
 			
-			let coordinates = JSON.parse(result.geoJson.S).coordinates
+			let coordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('La fuente más cercana es:')
-			reply.photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates[1] + ',' + coordinates[0] + '&key=' + mapsKey, '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + coordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates + '&key=' + mapsKey, '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
 		})
 	}
 }
@@ -185,9 +185,9 @@ async function processBici(msg, reply, results) {
 		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ninguna estación de BiciMAD.')
 	} else {
 		getResult(msg, results, (result, distance) => {
-			let coordinates = JSON.parse(result.geoJson.S).coordinates
+			let coordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('La estación de BiciMAD más cercana es:')
-			reply.photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates[1] + ',' + coordinates[0] + '&key=' + mapsKey, '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n\n' + result.calle.S, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + coordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates + '&key=' + mapsKey, '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n\n' + result.calle.S, 'Markdown')
 		})
 	}
 }
@@ -202,9 +202,9 @@ async function processAseo(msg, reply, results) {
 				descripcion = result.descripcion.S
 			}
 			
-			let coordinates = JSON.parse(result.geoJson.S).coordinates
+			let coordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('El aseo más cercano es:')
-			reply.photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates[1] + ',' + coordinates[0] + '&key=' + mapsKey, '🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + coordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates + '&key=' + mapsKey, '🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
 		})
 	}
 }
@@ -230,9 +230,9 @@ async function processSuper(marca, msg, reply, results) {
 				descripcion = '\n' + result.descripcion.S
 			}
 			
-			let coordinates = JSON.parse(result.geoJson.S).coordinates
+			let coordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 			reply.keyboard().text('El ' + marca + ' más cercano es:')
-			reply.photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates[1] + ',' + coordinates[0] + '&key=' + mapsKey, '🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + coordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|' + msg.latitude + ',' + msg.longitude + '&markers=color:red|' + coordinates + '&key=' + mapsKey, '🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
 		})
 	}
 }
