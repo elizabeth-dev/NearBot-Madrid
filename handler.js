@@ -589,12 +589,14 @@ bot.callback((query, next) => {
 	}
 })
 
+bot.stop()
+
 module.exports.telegram = (event, context, callback) => {
 	bot.processUpdate(event.body) // Botgram processes incoming request
 	const response = {
 		statusCode: 200,
 		body: JSON.stringify({
-			message: 'Go Serverless v1.0! Your function executed successfully!',
+			message: 'NearBot v1.0',
 			input: event
 		})
 	}
