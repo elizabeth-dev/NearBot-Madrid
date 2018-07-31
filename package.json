@@ -1,6 +1,6 @@
 {
   "name": "nearbot-madrid",
-  "version": "1.0-beta",
+  "version": "1.0.0-beta",
   "description": "Find nearby places in Madrid easily using Telegram",
   "main": "handler.js",
   "scripts": {
@@ -21,11 +21,12 @@
   },
   "homepage": "https://github.com/elizabeth-dev/NearBot#readme",
   "dependencies": {
-    "aws-sdk": "^2.282.1",
-    "botgram": "^2.1.0",
+    "aws-sdk": "^2.283.1",
+    "botgram": "^2.2.0",
     "dynamodb-geo": "^0.4.0"
   },
   "devDependencies": {
+    "dotenv": "^6.0.0",
     "eslint": "^5.2.0",
     "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^3.8.0"
