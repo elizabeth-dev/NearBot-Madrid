@@ -8,7 +8,8 @@
             "type": "node",
             "request": "launch",
             "name": "Iniciar programa",
-            "program": "${workspaceFolder}/handler.js"
+            "program": "${workspaceFolder}/handler.js",
+            "envFile": "${workspaceFolder}/dev.env"
         }
     ]
 }

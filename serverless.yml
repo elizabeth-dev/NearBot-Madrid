@@ -1,5 +1,5 @@
 service: NearBot
-app: nearbot
+app: nearbot-${self:provider.stage}
 tenant: elizabethdev
 
 provider:
@@ -15,25 +15,15 @@ provider:
         - dynamodb:Query
       Resource: "arn:aws:dynamodb:eu-west-1:*:*"
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-
-# you can add packaging information here
-#package:
-#  include:
-#    - include-me.js
-#    - include-me-dir/**
-#  exclude:
-#    - exclude-me.js
-#    - exclude-me-dir/**
-
 functions:
   NearBot_Madrid:
     name: ${self:provider.stage}-NearBot_Madrid
     description: Madrid instance of NearBot
     handler: handler.telegram
     memorySize: 256
+    environment:
+      TELEGRAM_TOKEN: ${file(./getEnv.js):getEnvVars.TELEGRAM_TOKEN_${self:provider.stage}}
+      MAPS_TOKEN: ${file(./getEnv.js):getEnvVars.MAPS_TOKEN_${self:provider.stage}}
     events:
       - http:
           path: NearBot_Madrid

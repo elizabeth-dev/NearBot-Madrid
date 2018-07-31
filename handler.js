@@ -1,10 +1,10 @@
 'use strict'
-
+console.log(process.env.MAPS_TOKEN)
 // Telegram and Botgram libraries and config
 const https = require('https')
 const agent = new https.Agent({ keepAlive: true, maxFreeSockets: 5 }) // Creating keepAlive agent
 const botgram = require('botgram')
-const bot = botgram('...', { agent: agent }) // Initializing Botgram with keepAlive agent
+const bot = botgram(process.env.TELEGRAM_TOKEN, { agent: agent }) // Initializing Botgram with keepAlive agent
 
 // AWS DynamoDB libraries and config
 const AWS = require('aws-sdk')
@@ -13,7 +13,7 @@ const ddb = new AWS.DynamoDB({ region: 'eu-west-1' })
 const converter = AWS.DynamoDB.Converter.output
 
 const imgSize = '400x500' // Size for the map image
-const mapsKey = '...' // Google Maps Static API Key
+const mapsKey = process.env.MAPS_TOKEN // Google Maps Static API Key
 const regex = { // Strings for sending and comparing messages to regex
 	mediosTransporte: 'Vamos a buscar estaciones de ',
 	marcasSupermercado: 'Vamos a buscar el supermercado ',
