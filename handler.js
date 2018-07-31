@@ -45,7 +45,7 @@ async function searchQuery(coordinates, config, callback) {
 	let configDB = new ddbGeo.GeoDataManagerConfiguration(ddb, config.table)
 	configDB.hashKeyLength = config.hashLength
 	let searchDB = new ddbGeo.GeoDataManager(configDB)
-	
+
 	// Increment the radius until results are found
 	for (let radius = config.radius, foundResult = false; radius <= config.radiusLimit && foundResult === false; radius = radius*2) {
 		await searchDB.queryRadius(Object.assign({
@@ -255,7 +255,7 @@ bot.command('start', 'help', (msg, reply) => {
 
 // Show bot license and info
 bot.command('info', (msg, reply) => {
-	reply.disablePreview().markdown('*NearBot Madrid*\nVersión 1.0 (30/07/2018)\n\nTiempo de ejecución Node.js v8.10 junto al framework para bots [Botgram](https://github.com/botgram/botgram) v2.1.0.\n\nEste bot es software libre y está licenciado bajo [GNU AGPL v3.0](https://github.com/elizabeth-dev/NearBot-Madrid/blob/master/LICENSE.md), lo cuál significa que puedes modificarlo y redistribuirlo libremente conforme a los términos de la licencia. Asimismo, se distribuye sin ninguna garantía ni responsabilidad.\n\nPuedes obtener más informacion sobre el funcionamiento del bot, su código fuente, y su licencia en su repositorio de GitHub [NearBot-Madrid](https://github.com/elizabeth-dev/NearBot-Madrid).\n\nAdemás, puedes contactar con su creadora por [Twitter](https://twitter.com/Eli_coptero_), o por [Telegram](tg://user?id=74460537).\n\n_Elizabeth Martín Campos_\nhttps://eli.zabeth.es/')
+	reply.disablePreview().markdown('*NearBot Madrid*\nVersión 1.0-beta (30/07/2018)\n\nTiempo de ejecución Node.js v8.10 junto al framework para bots [Botgram](https://github.com/botgram/botgram) v2.1.0.\n\nEste bot es software libre y está licenciado bajo [GNU AGPL v3.0](https://github.com/elizabeth-dev/NearBot-Madrid/blob/master/LICENSE.md), lo cuál significa que puedes modificarlo y redistribuirlo libremente conforme a los términos de la licencia. Asimismo, se distribuye sin ninguna garantía ni responsabilidad.\n\nPuedes obtener más informacion sobre el funcionamiento del bot, su código fuente, y su licencia en su repositorio de GitHub [NearBot-Madrid](https://github.com/elizabeth-dev/NearBot-Madrid).\n\nAdemás, puedes contactar con su creadora por [Twitter](https://twitter.com/Eli_coptero_), o por [Telegram](tg://user?id=74460537).\n\n_Elizabeth Martín Campos_\nhttps://eli.zabeth.es/')
 })
 
 // Show what's new in the last update
@@ -271,14 +271,15 @@ bot.command('metro', 'cercanias', 'metroligero', 'transporte', 'fuente', 'bici',
 bot.location((msg, reply) => {
 	let coordinates = [msg.latitude, msg.longitude]
 	if (msg.reply) { // If the location is a reply to a message (serverless tricks)
+
 		let config = { filter: {} }
 		
 		if (RegExp('^' + regex.mediosTransporte).test(msg.reply.text)) { // If message requests a transport station
 			// Initialize the DB client
 			config.table = 'NearBot_Madrid_Transporte'
 			config.hashLength = 8
-			config.radius = 200
-			config.radiusLimit = 3200
+			config.radius = 300
+			config.radiusLimit = 2400
 			
 			// Check which type of station is the user requesting
 			switch (true) {
@@ -338,8 +339,8 @@ bot.location((msg, reply) => {
 			// Initialize the DB client
 			config.table = 'NearBot_Madrid_Supermercado'
 			config.hashLength = 9
-			config.radius = 200
-			config.radiusLimit = 3200
+			config.radius = 500
+			config.radiusLimit = 4000
 			
 			switch (true) {
 				case RegExp('^' + regex.carrefour).test(msg.reply.text):
@@ -376,7 +377,7 @@ bot.location((msg, reply) => {
 			// Initialize the DB client
 			config.table = 'NearBot_Madrid_Fuente'
 			config.hashLength = 9
-			config.radius = 100
+			config.radius = 400
 			config.radiusLimit = 1600
 			
 			searchQuery(coordinates, config, (results) => {
@@ -386,8 +387,8 @@ bot.location((msg, reply) => {
 			// Initialize the DB client
 			config.table = 'NearBot_Madrid_Bici'
 			config.hashLength = 8
-			config.radius = 100
-			config.radiusLimit = 800
+			config.radius = 300
+			config.radiusLimit = 1200
 			
 			searchQuery(coordinates, config, (results) => {
 				processBici(coordinates, reply, results)
@@ -396,8 +397,8 @@ bot.location((msg, reply) => {
 			// Initialize the DB client
 			config.table = 'NearBot_Madrid_Aseo'
 			config.hashLength = 9
-			config.radius = 100
-			config.radiusLimit = 800
+			config.radius = 400
+			config.radiusLimit = 1600
 			
 			searchQuery(coordinates, config, (results) => {
 				processAseo(coordinates, reply, results)
@@ -423,15 +424,26 @@ bot.callback((query, next) => {
 	}
 	
 	let reply = bot.reply(data.i)
+
 	let config = { filter: {} }
 	switch (data.t) {
+		case 'menu':
+		reply.inlineKeyboard([
+			[{ text: 'Transporte', callback_data: JSON.stringify({ t: 'tte_menu', c: data.c, i: data.i }) }],
+			[{ text: 'Supermercado', callback_data: JSON.stringify({ t: 'spr_menu', c: data.c, i: data.i }) }],
+			[{ text: 'BiciMAD', callback_data: JSON.stringify({ t: 'bici', c: data.c, i: data.i }) }],
+			[{ text: 'Fuente de agua', callback_data: JSON.stringify({ t: 'fuente', c: data.c, i: data.i }) }],
+			[{ text: 'Aseo', callback_data: JSON.stringify({ t: 'aseo', c: data.c, i: data.i }) }]
+		]).editReplyMarkup(query.message).then(query.answer())
+		break
 		case 'tte_menu':
 		reply.inlineKeyboard([
 			[{ text: 'Metro', callback_data: JSON.stringify({ t: 'mtro', c: data.c, i: data.i }) }],
 			[{ text: 'Cercanías', callback_data: JSON.stringify({ t: 'cerc', c: data.c, i: data.i }) }],
 			[{ text: 'Metro ligero', callback_data: JSON.stringify({ t: 'mlig', c: data.c, i: data.i }) }],
-			[{ text: 'Cualquiera', callback_data: JSON.stringify({ t: 'tte', c: data.c, i: data.i }) }]
-		]).editReplyMarkup(query.message)
+			[{ text: 'Cualquiera', callback_data: JSON.stringify({ t: 'tte', c: data.c, i: data.i }) }],
+			[{ text: '<- Volver', callback_data: JSON.stringify({ t: 'menu', c: data.c, i: data.i }) }]
+		]).editReplyMarkup(query.message).then(query.answer())
 		break
 		case 'mtro':
 		// Initialize the DB client
@@ -444,8 +456,8 @@ bot.callback((query, next) => {
 				ExpressionAttributeValues: { ':type': {'S': 'Metro' } }
 			}
 		}
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 300
+		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
 		searchQuery(data.c, config, (results) => {
@@ -463,8 +475,8 @@ bot.callback((query, next) => {
 				ExpressionAttributeValues: { ':type': {'S': 'Cercanías' } }
 			}
 		}
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 300
+		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
 		searchQuery(data.c, config, (results) => {
@@ -482,8 +494,8 @@ bot.callback((query, next) => {
 				ExpressionAttributeValues: { ':type': {'S': 'Metro Ligero' } }
 			}
 		}
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 300
+		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
 		searchQuery(data.c, config, (results) => {
@@ -494,8 +506,8 @@ bot.callback((query, next) => {
 		// Initialize the DB client
 		config.table = 'NearBot_Madrid_Transporte'
 		config.hashLength = 8
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 300
+		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
 		searchQuery(data.c, config, (results) => {
@@ -506,14 +518,15 @@ bot.callback((query, next) => {
 		reply.inlineKeyboard([
 			[{ text: 'Carrefour', callback_data: JSON.stringify({ t: 'crf', c: data.c, i: data.i }) }],
 			[{ text: 'Mercadona', callback_data: JSON.stringify({ t: 'mrc', c: data.c, i: data.i }) }],
-			[{ text: 'Cualquiera', callback_data: JSON.stringify({ t: 'spr', c: data.c, i: data.i }) }]
-		]).editReplyMarkup(query.message)
+			[{ text: 'Cualquiera', callback_data: JSON.stringify({ t: 'spr', c: data.c, i: data.i }) }],
+			[{ text: '<- Volver', callback_data: JSON.stringify({ t: 'menu', c: data.c, i: data.i }) }]
+		]).editReplyMarkup(query.message).then(query.answer())
 		break
 		case 'crf':
 		config.table = 'NearBot_Madrid_Supermercado'
 		config.hashLength = 9
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 500
+		config.radiusLimit = 4000
 		config.filter = {
 			QueryInput: {
 				FilterExpression: '#marca = :type',
@@ -529,8 +542,8 @@ bot.callback((query, next) => {
 		case 'mrc':
 		config.table = 'NearBot_Madrid_Supermercado'
 		config.hashLength = 9
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 500
+		config.radiusLimit = 4000
 		config.filter = {
 			QueryInput: {
 				FilterExpression: '#marca = :type',
@@ -546,8 +559,8 @@ bot.callback((query, next) => {
 		case 'spr':
 		config.table = 'NearBot_Madrid_Supermercado'
 		config.hashLength = 9
-		config.radius = 200
-		config.radiusLimit = 3200
+		config.radius = 500
+		config.radiusLimit = 4000
 		
 		searchQuery(data.c, config, (results) => {
 			processSuper('supermercado', data.c, reply, results)
@@ -556,8 +569,8 @@ bot.callback((query, next) => {
 		case 'bici':
 		config.table = 'NearBot_Madrid_Bici'
 		config.hashLength = 8
-		config.radius = 100
-		config.radiusLimit = 800
+		config.radius = 300
+		config.radiusLimit = 1200
 		
 		searchQuery(data.c, config, (results) => {
 			processBici(data.c, reply, results)
@@ -566,7 +579,7 @@ bot.callback((query, next) => {
 		case 'fuente':
 		config.table = 'NearBot_Madrid_Fuente'
 		config.hashLength = 9
-		config.radius = 100
+		config.radius = 400
 		config.radiusLimit = 1600
 		
 		searchQuery(data.c, config, (results) => {
@@ -576,8 +589,8 @@ bot.callback((query, next) => {
 		case 'aseo':
 		config.table = 'NearBot_Madrid_Aseo'
 		config.hashLength = 9
-		config.radius = 100
-		config.radiusLimit = 800
+		config.radius = 400
+		config.radiusLimit = 1600
 
 		searchQuery(data.c, config, (results) => {
 			processAseo(data.c, reply, results)
@@ -586,23 +599,18 @@ bot.callback((query, next) => {
 		default:
 		console.log(data)
 		console.log(query)
+		query.answer()
 	}
 })
 
 bot.stop()
 
 module.exports.telegram = (event, context, callback) => {
-	bot.processUpdate(event.body) // Botgram processes incoming request
+	bot.processUpdate(JSON.parse(event.body)) // Botgram processes incoming request
 	const response = {
 		statusCode: 200,
-		body: JSON.stringify({
-			message: 'NearBot v1.0',
-			input: event
-		})
+		body: JSON.stringify('NearBot v1.0')
 	}
 	
 	callback(null, response)
-	
-	// Use this code if you don't use the http event with the LAMBDA-PROXY integration
-	// callback(null, { message: 'Go Serverless v1.0! Your function executed successfully!', event });
 }
