@@ -1,5 +1,5 @@
 'use strict'
-console.log(process.env.MAPS_TOKEN)
+
 // Telegram and Botgram libraries and config
 const https = require('https')
 const agent = new https.Agent({ keepAlive: true, maxFreeSockets: 5 }) // Creating keepAlive agent
@@ -12,8 +12,11 @@ const ddbGeo = require('dynamodb-geo')
 const ddb = new AWS.DynamoDB({ region: 'eu-west-1' })
 const converter = AWS.DynamoDB.Converter.output
 
+const crypto = require('crypto') // Crypto module for signing Maps requests
 const imgSize = '400x500' // Size for the map image
 const mapsKey = process.env.MAPS_TOKEN // Google Maps Static API Key
+const mapsSigning = process.env.MAPS_SIGNING_SECRET // Google Maps API signing secret
+
 const regex = { // Strings for sending and comparing messages to regex
 	mediosTransporte: 'Vamos a buscar estaciones de ',
 	marcasSupermercado: 'Vamos a buscar el supermercado ',
@@ -36,8 +39,16 @@ function toTitleCase(str) {
 	});
 }
 
-function transformHour(hora) { // Transform hour in format 900 in format 9:00
+// Transform hour in format 900 in format 9:00
+function transformHour(hora) {
 	return hora.slice(0, hora.length-2) + ':' + hora.slice(hora.length-2, hora.length)
+}
+
+// Generate signed Maps Static API requests
+function getMap(coordinates, resultCoordinates) {
+	let mapsRequest = '/maps/api/staticmap?size=' + imgSize + '&markers=color:blue%7Csize:mid%7C' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red%7C' + resultCoordinates + '&language=es&key=' + mapsKey
+	let signature = crypto.createHmac('sha1', Buffer.from(mapsSigning.replace(/-/g, '+').replace(/_/g, '/'), 'base64')).update(mapsRequest).digest('base64').replace(/\+/g, '-').replace(/\//g, '_')
+	return 'https://maps.googleapis.com' + mapsRequest + '&signature=' + signature
 }
 
 // Function for querying the DB
@@ -163,8 +174,9 @@ async function processTransport(mode, coordinates, reply, results) { // Process 
 			
 			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
+
 			reply.keyboard().text('Esta es la estación de ' + mode + ' más cercana:')
-			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, modos + ' *' + denominacionPrincipal + '* (_' + distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), modos + ' *' + denominacionPrincipal + '* (_' + distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
 		})
 	}
 }
@@ -181,8 +193,9 @@ async function processFuente(coordinates, reply, results) {
 			
 			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
+
 			reply.keyboard().text('La fuente más cercana es:')
-			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
 		})
 	}
 }
@@ -194,8 +207,9 @@ async function processBici(coordinates, reply, results) {
 		getResult(coordinates, results, (result, distance) => {
 			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
+
 			reply.keyboard().text('La estación de BiciMAD más cercana es:')
-			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n\n' + result.calle.S, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\n\n' + result.calle.S, 'Markdown')
 		})
 	}
 }
@@ -212,8 +226,9 @@ async function processAseo(coordinates, reply, results) {
 			
 			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
+
 			reply.keyboard().text('El aseo más cercano es:')
-			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
 		})
 	}
 }
@@ -242,8 +257,9 @@ async function processSuper(marca, coordinates, reply, results) {
 			
 			// Hide the custom keyboard, and return the result with a map
 			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
+
 			reply.keyboard().text('El ' + marca + ' más cercano es:')
-			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo('https://maps.googleapis.com/maps/api/staticmap?size=' + imgSize + '&markers=color:blue|size:mid|' + coordinates[0] + ',' + coordinates[1] + '&markers=color:red|' + resultCoordinates + '&language=es&key=' + mapsKey, '🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
+			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
 		})
 	}
 }
