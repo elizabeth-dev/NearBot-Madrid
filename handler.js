@@ -250,7 +250,7 @@ async function processAseo(coordinates, reply, results) {
 		let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 		
 		reply.keyboard().text('El aseo más cercano es:')
-		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚽 *' + toTitleCase(result.calle.S) + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
+		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚽 *' + result.calle.S + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
 	})
 }
 }
