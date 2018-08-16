@@ -69,11 +69,11 @@ async function searchQuery(coordinates, config, callback) {
 				longitude: coordinates[1]
 			}
 		}, config.filter))
-		.then((result) => {
+		.then((results) => {
 			// When done, or the radius limit is reached, return the resulted array
-			if (result.length > 0 || radius === config.radiusLimit) {
+			if (results.length > 0 || radius === config.radiusLimit) {
 				foundResult = true
-				return callback(result)
+				return callback(getResult(coordinates, results))
 			}
 		})
 	}
@@ -85,112 +85,109 @@ function calcDistance(coordinates, result) {
 	return 110.25 * Math.sqrt(Math.pow(geoJson.coordinates[1] - coordinates[0], 2) + Math.pow((geoJson.coordinates[0] - coordinates[1]) * Math.cos(coordinates[0] * (Math.PI/180)), 2))
 }
 
-async function getResult(coordinates, results, callback) { // Gets the results array and returns the nearest
-	let distance = null
-	if (results.length === 1) { // If a unique result found
-		return callback(results[0], Math.round(calcDistance(coordinates, results[0]) * 100000) / 100) // Round the distance to meters
-	} else { // If more than one result is found, search for the nearest
-		let nearest = 0
-		distance = calcDistance(coordinates, results[nearest])
-		
-		for (let i = 1; i < results.length; i++) {
-			let newDistance = calcDistance(coordinates, results[i])
-			
-			if (newDistance < distance) { // If the new calculated distance is less than the actual nearest distance, replace it
-				nearest = i
-				distance = newDistance
-			}
-		}
-		return callback(results[nearest], Math.round(distance * 100000) / 100)
+async function getResult(coordinates, results) { // Gets the results array and returns the nearest
+	if (results.length === 0) {
+		return null
 	}
+	// Search for the nearest result
+	let nearest = 0
+	let distance = calcDistance(coordinates, results[nearest])
+	
+	for (let i = 1; i < results.length; i++) {
+		let newDistance = calcDistance(coordinates, results[i])
+		
+		if (newDistance < distance) { // If the new calculated distance is less than the actual nearest distance, replace it
+			nearest = i
+			distance = newDistance
+		}
+	}
+	results[nearest].distance = Math.round(distance * 100000) / 100 // Round distance to meters
+	return results[nearest]
 }
 
-async function processTransport(mode, coordinates, reply, results) { // Process transport requests
-	if (results.length === 0) { // If no results found
+async function processTransport(mode, coordinates, reply, result) { // Process transport requests
+	if (!result) { // If no results found
 		reply.keyboard().text('Parece que estás bastante lejos de la ciudad. No hemos logrado encontrar ninguna estación de ' + mode + ' cercana.')
 	} else {
-		getResult(coordinates, results, (result, distance) => {
-			switch(mode) { // Set the principal station mode
-				case 'metro':
+		switch(mode) { // Set the principal station mode
+			case 'metro':
+			var denominacionPrincipal = result.denominacionMetro.S
+			var lineasPrincipal = '\nLíneas Metro: _' + converter(result.lineasMetro).sort().toString().replace(/,/g, '_, _') + '_'
+			var modos = '🚇'
+			break
+			case 'cercanías':
+			var denominacionPrincipal = result.denominacionCercanias.S
+			var lineasPrincipal = '\nLíneas Cercanías: _' + converter(result.lineasCercanias).sort().toString().replace(/,/g, '_, _') + '_'
+			var modos = '🚆'
+			break
+			case 'metro ligero':
+			var denominacionPrincipal = result.denominacionLigero.S
+			var lineasPrincipal = '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
+			var modos = '🚊'
+			break
+			case 'transporte':
+			if (result.denominacionMetro) {
 				var denominacionPrincipal = result.denominacionMetro.S
 				var lineasPrincipal = '\nLíneas Metro: _' + converter(result.lineasMetro).sort().toString().replace(/,/g, '_, _') + '_'
 				var modos = '🚇'
-				break
-				case 'cercanías':
+				mode = 'metro'
+			} else if (result.denominacionCercanias) {
 				var denominacionPrincipal = result.denominacionCercanias.S
 				var lineasPrincipal = '\nLíneas Cercanías: _' + converter(result.lineasCercanias).sort().toString().replace(/,/g, '_, _') + '_'
 				var modos = '🚆'
-				break
-				case 'metro ligero':
+				mode = 'cercanías'
+			} else {
 				var denominacionPrincipal = result.denominacionLigero.S
 				var lineasPrincipal = '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
 				var modos = '🚊'
-				break
-				case 'transporte':
-				if (result.denominacionMetro) {
-					var denominacionPrincipal = result.denominacionMetro.S
-					var lineasPrincipal = '\nLíneas Metro: _' + converter(result.lineasMetro).sort().toString().replace(/,/g, '_, _') + '_'
-					var modos = '🚇'
-					mode = 'metro'
-				} else if (result.denominacionCercanias) {
-					var denominacionPrincipal = result.denominacionCercanias.S
-					var lineasPrincipal = '\nLíneas Cercanías: _' + converter(result.lineasCercanias).sort().toString().replace(/,/g, '_, _') + '_'
-					var modos = '🚆'
-					mode = 'cercanías'
-				} else {
-					var denominacionPrincipal = result.denominacionLigero.S
-					var lineasPrincipal = '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
-					var modos = '🚊'
-					mode = 'metro ligero'
-				}
-				break
+				mode = 'metro ligero'
 			}
-			
-			let denominacionSecundaria = ''
-			let lineasSecundaria = ''
-			
-			// Set the secondary station modes
-			if (result.denominacionMetro && mode !== 'metro') {
-				if (result.denominacionMetro.S !== denominacionPrincipal) {
-					denominacionSecundaria = '\n🚇 Metro: ' + result.denominacionMetro.S
-				} else {
-					modos = modos + '🚇'
-				}
-				lineasSecundaria = '\nLíneas Metro: _' + converter(result.lineasMetro).sort().toString().replace(/,/g, '_, _') + '_'
+			break
+		}
+		
+		let denominacionSecundaria = ''
+		let lineasSecundaria = ''
+		
+		// Set the secondary station modes
+		if (result.denominacionMetro && mode !== 'metro') {
+			if (result.denominacionMetro.S !== denominacionPrincipal) {
+				denominacionSecundaria = '\n🚇 Metro: ' + result.denominacionMetro.S
+			} else {
+				modos = modos + '🚇'
 			}
-			if (result.denominacionCercanias && mode !== 'cercanías') {
-				if (result.denominacionCercanias.S !== denominacionPrincipal) {
-					denominacionSecundaria = denominacionSecundaria + '\n🚆 Cercanías: ' + result.denominacionCercanias.S
-				} else {
-					modos = modos + '🚆'
-				}
-				lineasSecundaria = lineasSecundaria + '\nLíneas Cercanías: _' + converter(result.lineasCercanias).sort().toString().replace(/,/g, '_, _') + '_'
+			lineasSecundaria = '\nLíneas Metro: _' + converter(result.lineasMetro).sort().toString().replace(/,/g, '_, _') + '_'
+		}
+		if (result.denominacionCercanias && mode !== 'cercanías') {
+			if (result.denominacionCercanias.S !== denominacionPrincipal) {
+				denominacionSecundaria = denominacionSecundaria + '\n🚆 Cercanías: ' + result.denominacionCercanias.S
+			} else {
+				modos = modos + '🚆'
 			}
-			if (result.denominacionLigero && mode !== 'metro ligero') {
-				if (result.denominacionLigero.S !== denominacionPrincipal) {
-					denominacionSecundaria = denominacionSecundaria + '\n🚊 Metro ligero: ' + result.denominacionLigero.S
-				} else {
-					modos = modos + '🚊'
-				}
-				lineasSecundaria = lineasSecundaria + '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
+			lineasSecundaria = lineasSecundaria + '\nLíneas Cercanías: _' + converter(result.lineasCercanias).sort().toString().replace(/,/g, '_, _') + '_'
+		}
+		if (result.denominacionLigero && mode !== 'metro ligero') {
+			if (result.denominacionLigero.S !== denominacionPrincipal) {
+				denominacionSecundaria = denominacionSecundaria + '\n🚊 Metro ligero: ' + result.denominacionLigero.S
+			} else {
+				modos = modos + '🚊'
 			}
-			
-			// Hide the custom keyboard, and return the result with a map
-			let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
-			
-			reply.keyboard().text('Esta es la estación de ' + mode + ' más cercana:')
-			reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), modos + ' *' + denominacionPrincipal + '* (_' + distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
-		})
+			lineasSecundaria = lineasSecundaria + '\nLíneas Metro ligero: _' + converter(result.lineasLigero).sort().toString().replace(/,/g, '_, _') + '_'
+		}
+		
+		// Hide the custom keyboard, and return the result with a map
+		let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
+		
+		reply.keyboard().text('Esta es la estación de ' + mode + ' más cercana:')
+		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), modos + ' *' + denominacionPrincipal + '* (_' + result.distance + 'm_)' + denominacionSecundaria + '\n' + lineasPrincipal + lineasSecundaria, 'Markdown')
 	}
 }
 
-async function processFuente(coordinates, reply, results) {
-	if (results.length === 0) { // If no results found
+async function processFuente(coordinates, reply, result) {
+	if (!result) { // If no results found
 		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ninguna fuente cercana.')
 	} else {
-		getResult(coordinates, results, (result, distance) => {
-			let calle = ''
-			if (result.calle) { // If there's no "street" value, skip it
+		let calle = ''
+		if (result.calle) { // If theres no street value, skip it
 			calle = result.calle.S
 		}
 		
@@ -198,17 +195,16 @@ async function processFuente(coordinates, reply, results) {
 		let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 		
 		reply.keyboard().text('La fuente más cercana es:')
-		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
-	})
-}
+		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚰 *' + toTitleCase(result.denominacion.S) + '* (_' + result.distance + 'm_)\n\n' + toTitleCase(calle), 'Markdown')
+	}
 }
 
-async function processBici(coordinates, reply, results) {
-	if (results.length === 0) { // If no results found
+async function processBici(coordinates, reply, result) {
+	if (!result) { // If no results found
 		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ninguna estación de BiciMAD.')
 	} else {
-		getResult(coordinates, results, (result, distance) => {
-			https.get('https://rbdata.emtmadrid.es:8443/BiciMad/get_single_station/' + emtID + '/' + emtPass + '/' + result.rangeKey.S, (res) => {
+		// Indentation in VSCode is broken, so i have to put inverted bars to make it work
+		https.get('https:\/\/rbdata.emtmadrid.es:8443/BiciMad/get_single_station/' + emtID + '/' + emtPass + '/' + result.rangeKey.S, (res) => {
 			let body = ''
 			
 			res.on('data', (chunk) => {
@@ -229,20 +225,18 @@ async function processBici(coordinates, reply, results) {
 				let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 				
 				reply.keyboard().text('La estación de BiciMAD más cercana es:')
-				reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + distance + 'm_)\nBicis: ' + biciDisponible + '\n\n' + result.calle.S, 'Markdown')
+				reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚲 ' + result.numeroBase.S + ' - *' + result.denominacionBici.S + '* (_' + result.distance + 'm_)\nBicis: ' + biciDisponible + '\n\n' + result.calle.S, 'Markdown')
 			})
 		})
-	})
-}
+	}
 }
 
-async function processAseo(coordinates, reply, results) {
-	if (results.length === 0) { // If no results found
+async function processAseo(coordinates, reply, result) {
+	if (!result) { // If no results found
 		reply.keyboard().text('Parece que estás bastante lejos de Madrid. No hemos logrado encontrar ningún aseo cercano.')
 	} else {
-		getResult(coordinates, results, (result, distance) => {
-			let descripcion = ''
-			if (result.descripcion) { // If there's no "descripcion" value, skip it
+		let descripcion = ''
+		if (result.descripcion) { // If there is no descripcion value, skip it
 			descripcion = result.descripcion.S
 		}
 		
@@ -250,30 +244,28 @@ async function processAseo(coordinates, reply, results) {
 		let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 		
 		reply.keyboard().text('El aseo más cercano es:')
-		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚽 *' + result.calle.S + '* (_' + distance + 'm_)\n\n' + descripcion, 'Markdown')
-	})
-}
+		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🚽 *' + result.calle.S + '* (_' + result.distance + 'm_)\n\n' + descripcion, 'Markdown')
+	}
 }
 
-async function processSuper(marca, coordinates, reply, results) {
-	if (results.length === 0) { // If no results found
+async function processSuper(marca, coordinates, reply, result) {
+	if (!result) { // If no results found
 		reply.keyboard().text('Parece que estás bastante lejos de la ciudad. No hemos logrado encontrar ningún ' + marca + ' cercano.')
 	} else {
-		getResult(coordinates, results, (result, distance) => {
-			// Get the opening hours for the current day
-			let day = new Date().getDay()
-			let arrayHorarios = converter(result.horario.L[day])
-			let horario = ''
-			if (arrayHorarios[0][0] === 0) {
-				horario = ' Cerrado hoy'
-			} else {
-				for (let i = 0; i < arrayHorarios[0].length; i++) {
-					horario = (horario + ' ' + transformHour(arrayHorarios[0][i].toString()) + 'h - ' + transformHour(arrayHorarios[1][i].toString()) + 'h ').replace('  ', ', ')
-				}
+		// Get the opening hours for the current day
+		let day = new Date().getDay()
+		let arrayHorarios = converter(result.horario.L[day])
+		let horario = ''
+		if (arrayHorarios[0][0] === 0) {
+			horario = ' Cerrado hoy'
+		} else {
+			for (let i = 0; i < arrayHorarios[0].length; i++) {
+				horario = (horario + ' ' + transformHour(arrayHorarios[0][i].toString()) + 'h - ' + transformHour(arrayHorarios[1][i].toString()) + 'h ').replace('  ', ', ')
 			}
-			
-			let descripcion = ''
-			if (result.descripcion) { // If there's not "descripcion" value, skip it
+		}
+		
+		let descripcion = ''
+		if (result.descripcion) { // If there is not descripcion value, skip it
 			descripcion = '\n' + result.descripcion.S
 		}
 		
@@ -281,9 +273,8 @@ async function processSuper(marca, coordinates, reply, results) {
 		let resultCoordinates = JSON.parse(result.geoJson.S).coordinates[1] + ',' + JSON.parse(result.geoJson.S).coordinates[0]
 		
 		reply.keyboard().text('El ' + marca + ' más cercano es:')
-		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🛒 *' + result.nombre.S + '* (_' + distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
-	})
-}
+		reply.inlineKeyboard([[{ text: 'Abrir en app', url: 'https://www.google.com/maps/search/?api=1&query=' + resultCoordinates }]]).photo(getMap(coordinates, resultCoordinates), '🛒 *' + result.nombre.S + '* (_' + result.distance + 'm_)\n\n' + result.calle.S + ', ' + result.ciudad.S + descripcion + '\n\n📞 ' + result.telefono.S + '\n🕒' + horario, 'Markdown')
+	}
 }
 
 // Show bot usage guide
@@ -332,8 +323,8 @@ bot.location((msg, reply) => {
 				}
 				
 				// Query the DB and process the results
-				searchQuery(coordinates, config, (results) => {
-					processTransport('metro', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processTransport('metro', coordinates, reply, result)
 				})
 				break
 				case RegExp('^' + regex.cercanias).test(msg.reply.text):
@@ -347,8 +338,8 @@ bot.location((msg, reply) => {
 				}
 				
 				// Query the DB and process the results
-				searchQuery(coordinates, config, (results) => {
-					processTransport('cercanías', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processTransport('cercanías', coordinates, reply, result)
 				})
 				break
 				case RegExp('^' + regex.metroligero).test(msg.reply.text):
@@ -362,14 +353,14 @@ bot.location((msg, reply) => {
 				}
 				
 				// Query the DB and process the results
-				searchQuery(coordinates, config, (results) => {
-					processTransport('metro ligero', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processTransport('metro ligero', coordinates, reply, result)
 				})
 				break
 				case RegExp('^' + regex.transporte).test(msg.reply.text):
 				// Query the DB and process the results
-				searchQuery(coordinates, config, (results) => {
-					processTransport('transporte', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processTransport('transporte', coordinates, reply, result)
 				})
 				break
 			}
@@ -389,8 +380,8 @@ bot.location((msg, reply) => {
 						ExpressionAttributeValues: { ':type': { 'S': 'Carrefour' } }
 					}
 				}
-				searchQuery(coordinates, config, (results) => {
-					processSuper('Carrefour', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processSuper('Carrefour', coordinates, reply, result)
 				})
 				break
 				case RegExp('^' + regex.mercadona).test(msg.reply.text):
@@ -401,13 +392,13 @@ bot.location((msg, reply) => {
 						ExpressionAttributeValues: { ':type': { 'S': 'Mercadona' } }
 					}
 				}
-				searchQuery(coordinates, config, (results) => {
-					processSuper('Mercadona', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processSuper('Mercadona', coordinates, reply, result)
 				})
 				break
 				case RegExp('^' + regex.supermercado).test(msg.reply.text):
-				searchQuery(coordinates, config, (results) => {
-					processSuper('supermercado', coordinates, reply, results)
+				searchQuery(coordinates, config, (result) => {
+					processSuper('supermercado', coordinates, reply, result)
 				})
 				break
 			}
@@ -418,8 +409,8 @@ bot.location((msg, reply) => {
 			config.radius = 400
 			config.radiusLimit = 1600
 			
-			searchQuery(coordinates, config, (results) => {
-				processFuente(coordinates, reply, results)
+			searchQuery(coordinates, config, (result) => {
+				processFuente(coordinates, reply, result)
 			})
 		} else if (RegExp('^' + regex.bici).test(msg.reply.text)) { // If message requests a bike station
 			// Initialize the DB client
@@ -428,8 +419,8 @@ bot.location((msg, reply) => {
 			config.radius = 300
 			config.radiusLimit = 1200
 			
-			searchQuery(coordinates, config, (results) => {
-				processBici(coordinates, reply, results)
+			searchQuery(coordinates, config, (result) => {
+				processBici(coordinates, reply, result)
 			})
 		} else if (RegExp('^' + regex.aseo).test(msg.reply.text)) { // If message requests a WC
 			// Initialize the DB client
@@ -438,8 +429,8 @@ bot.location((msg, reply) => {
 			config.radius = 400
 			config.radiusLimit = 1600
 			
-			searchQuery(coordinates, config, (results) => {
-				processAseo(coordinates, reply, results)
+			searchQuery(coordinates, config, (result) => {
+				processAseo(coordinates, reply, result)
 			})
 		}
 	} else { // If the user sends their location and wants to pick a place
@@ -498,8 +489,8 @@ bot.callback((query, next) => {
 		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
-		searchQuery(data.c, config, (results) => {
-			processTransport('metro', data.c, reply, results).then(query.answer())
+		searchQuery(data.c, config, (result) => {
+			processTransport('metro', data.c, reply, result).then(query.answer())
 		})
 		break
 		case 'cerc':
@@ -517,8 +508,8 @@ bot.callback((query, next) => {
 		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
-		searchQuery(data.c, config, (results) => {
-			processTransport('cercanías', data.c, reply, results).then(query.answer())
+		searchQuery(data.c, config, (result) => {
+			processTransport('cercanías', data.c, reply, result).then(query.answer())
 		})
 		break
 		case 'mlig':
@@ -536,8 +527,8 @@ bot.callback((query, next) => {
 		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
-		searchQuery(data.c, config, (results) => {
-			processTransport('metro ligero', data.c, reply, results).then(query.answer())
+		searchQuery(data.c, config, (result) => {
+			processTransport('metro ligero', data.c, reply, result).then(query.answer())
 		})
 		break
 		case 'tte':
@@ -548,8 +539,8 @@ bot.callback((query, next) => {
 		config.radiusLimit = 2400
 		
 		// Query the DB and process the results
-		searchQuery(data.c, config, (results) => {
-			processTransport('transporte', data.c, reply, results).then(query.answer())
+		searchQuery(data.c, config, (result) => {
+			processTransport('transporte', data.c, reply, result).then(query.answer())
 		})
 		break
 		case 'spr_menu':
@@ -573,8 +564,8 @@ bot.callback((query, next) => {
 			}
 		}
 		
-		searchQuery(data.c, config, (results) => {
-			processSuper('Carrefour', data.c, reply, results)
+		searchQuery(data.c, config, (result) => {
+			processSuper('Carrefour', data.c, reply, result)
 		}).then(query.answer())
 		break
 		case 'mrc':
@@ -590,8 +581,8 @@ bot.callback((query, next) => {
 			}
 		}
 		
-		searchQuery(data.c, config, (results) => {
-			processSuper('Mercadona', data.c, reply, results)
+		searchQuery(data.c, config, (result) => {
+			processSuper('Mercadona', data.c, reply, result)
 		}).then(query.answer())
 		break
 		case 'spr':
@@ -600,8 +591,8 @@ bot.callback((query, next) => {
 		config.radius = 500
 		config.radiusLimit = 4000
 		
-		searchQuery(data.c, config, (results) => {
-			processSuper('supermercado', data.c, reply, results)
+		searchQuery(data.c, config, (result) => {
+			processSuper('supermercado', data.c, reply, result)
 		}).then(query.answer())
 		break
 		case 'bici':
@@ -610,8 +601,8 @@ bot.callback((query, next) => {
 		config.radius = 300
 		config.radiusLimit = 1200
 		
-		searchQuery(data.c, config, (results) => {
-			processBici(data.c, reply, results)
+		searchQuery(data.c, config, (result) => {
+			processBici(data.c, reply, result)
 		}).then(query.answer())
 		break
 		case 'fuente':
@@ -620,8 +611,8 @@ bot.callback((query, next) => {
 		config.radius = 400
 		config.radiusLimit = 1600
 		
-		searchQuery(data.c, config, (results) => {
-			processFuente(data.c, reply, results)
+		searchQuery(data.c, config, (result) => {
+			processFuente(data.c, reply, result)
 		}).then(query.answer())
 		break
 		case 'aseo':
@@ -630,8 +621,8 @@ bot.callback((query, next) => {
 		config.radius = 400
 		config.radiusLimit = 1600
 		
-		searchQuery(data.c, config, (results) => {
-			processAseo(data.c, reply, results)
+		searchQuery(data.c, config, (result) => {
+			processAseo(data.c, reply, result)
 		}).then(query.answer())
 		break
 		default:
