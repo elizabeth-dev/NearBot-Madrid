@@ -20,14 +20,26 @@ functions:
     name: ${self:provider.stage}-NearBot_Madrid
     description: Madrid instance of NearBot
     handler: handler.telegram
-    memorySize: 256
+    memorySize: 512
+    timeout: 10
     environment:
       TELEGRAM_TOKEN: ${file(./getEnv.js):getEnvVars.TELEGRAM_TOKEN_${self:provider.stage}}
       MAPS_TOKEN: ${file(./getEnv.js):getEnvVars.MAPS_TOKEN_${self:provider.stage}}
+      MAPS_SIGNING_SECRET: ${file(./getEnv.js):getEnvVars.MAPS_SIGNING_SECRET}
+      EMT_ID_CLIENT: ${file(./getEnv.js):getEnvVars.EMT_ID_CLIENT}
+      EMT_PASS_KEY: ${file(./getEnv.js):getEnvVars.EMT_PASS_KEY}
+      NEARBOT_VERSION: ${file(./getEnv.js):getEnvVars.NEARBOT_VERSION}
     events:
       - http:
           path: NearBot_Madrid
           method: post
+    tags:
+      - Project: NearBot
+      - NearBot_city: Madrid
+      - NearBot_resource: Function
+      - NearBot_environment: ${self:provider.stage}
+      - NearBot_version: ${file(./getEnv.js):getEnvVars.NEARBOT_VERSION}
+
 
 #    Define function environment variables here
 #    environment:
