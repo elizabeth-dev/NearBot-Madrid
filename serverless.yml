@@ -19,7 +19,7 @@ functions:
   NearBot_Madrid:
     name: ${self:provider.stage}-NearBot_Madrid
     description: Madrid instance of NearBot
-    handler: handler.telegram
+    handler: lib/handler.telegram
     memorySize: 512
     timeout: 10
     environment:
