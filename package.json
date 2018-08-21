@@ -2,7 +2,7 @@
   "name": "nearbot-madrid",
   "version": "1.0.0-beta",
   "description": "Find nearby places in Madrid easily using Telegram",
-  "main": "handler.js",
+  "main": "lib/handler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
