@@ -39,8 +39,3 @@ functions:
       - NearBot_resource: Function
       - NearBot_environment: ${self:provider.stage}
       - NearBot_version: ${file(./getEnv.js):getEnvVars.NEARBOT_VERSION}
-
-
-#    Define function environment variables here
-#    environment:
-#      variable2: value2
