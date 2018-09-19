@@ -21,9 +21,9 @@ In the future, we will add some new categories, like ATMs, public Wi-Fi acces po
 * [Google Maps API](https://cloud.google.com/maps-platform/)
 
 ## Dependencies
-* __aws-sdk__ - For connecting to DynamoDB databases.
-* __dynamodb-geo__ - For making geospatial queries.
-* __botgram__ - Telegram bot framework.
+* [aws-sdk](https://www.npmjs.com/package/aws-sdk) - For connecting to DynamoDB databases.
+* [dynamodb-geo](https://www.npmjs.com/package/dynamodb-geo) - For making geospatial queries.
+* [botgram](https://www.npmjs.com/package/botgram) - Telegram bot framework.
 
 ## Authors
 * __Elizabeth Martín Campos__ - _Creator and initial work_ - [Webpage](https://eli.zabeth.es/)
