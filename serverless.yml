@@ -11,8 +11,7 @@ provider:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - dynamodb:GetItem
-        - dynamodb:Query
+        - dynamodb:Scan
       Resource: "arn:aws:dynamodb:eu-west-1:*:*"
 
 functions:
