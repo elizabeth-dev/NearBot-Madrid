@@ -16,7 +16,9 @@ var fileName = null;
 var file = null;
 var attributes = [];
 var hashKey = null;
+var hashKeyType = 'S';
 var rangeKey = null;
+var rangeKeyType = 'S';
 
 // Default aprovisioned capacity units
 var readUnits = 3;
@@ -99,6 +101,16 @@ const hashPrompt = () => {
 	});
 }
 
+const hashTypePrompt = () => {
+	return new Promise((resolve) => {
+		rl.question('Select the partition key type (S/n/b): ', (ans) => {
+			hashKeyType = ans;
+
+			resolve();
+		});
+	});
+}
+
 const rangePrompt = () => {
 	return new Promise((resolve) => {
 		rl.question('Select the sort key (empty for none): ', (ans) => {
@@ -106,10 +118,24 @@ const rangePrompt = () => {
 			if (ans !== '') {
 				rangeKey = ans;
 			}
-
-			console.log('');
 			resolve();
 		});
+	});
+}
+
+const rangeTypePrompt = () => {
+	return new Promise((resolve) => {
+		if (rangeKey) {
+			rl.question('Select the sort key type (S/n/b): ', (ans) => {
+				rangeKeyType = ans;
+
+				console.log('');
+				resolve();
+			});
+		} else {
+			console.log('');
+			resolve();
+		}
 	});
 }
 
@@ -135,7 +161,9 @@ const main = async() => {
 	await writePrompt();
 	await filePrompt();
 	await hashPrompt();
+	await hashTypePrompt();
 	await rangePrompt();
+	await rangeTypePrompt();
 	await confirmPrompt();
 
 	// Configure the AWS region and create the DynamoDB clients
@@ -149,7 +177,7 @@ const main = async() => {
 		AttributeDefinitions: [
 			{
 				AttributeName: hashKey,
-				AttributeType: 'S'
+				AttributeType: hashKeyType
 			}
 		],
 		KeySchema: [
@@ -169,7 +197,7 @@ const main = async() => {
 	if (rangeKey) {
 		tableParams.AttributeDefinitions.push({
 			AttributeName: rangeKey,
-			AttributeType: 'S'
+			AttributeType: rangeKeyType
 		});
 
 		tableParams.KeySchema.push({
