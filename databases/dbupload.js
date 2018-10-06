@@ -53,7 +53,7 @@ const tablePrompt = () => {
 // Prompt the user for selecting the number of aprovisioned RCU and WCU
 const readPrompt = () => {
 	return new Promise((resolve) => {
-		rl.question('Introduce the number of aprovisioned read capacity units [5]: ', (ans) => {
+		rl.question('Introduce the number of aprovisioned read capacity units [3]: ', (ans) => {
 			// If no number given, use the default
 			if (ans !== '') {
 				readUnits = parseInt(ans);
@@ -65,7 +65,7 @@ const readPrompt = () => {
 
 const writePrompt = () => {
 	return new Promise((resolve) => {
-		rl.question('Introduce the number of aprovisioned write capacity units [5]: ', (ans) => {
+		rl.question('Introduce the number of aprovisioned write capacity units [3]: ', (ans) => {
 			if (ans !== '') {
 				writeUnits = parseInt(ans);
 			}
