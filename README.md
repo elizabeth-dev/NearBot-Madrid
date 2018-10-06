@@ -22,7 +22,6 @@ In the future, we will add some new categories, like ATMs, public Wi-Fi acces po
 
 ## Dependencies
 * [aws-sdk](https://www.npmjs.com/package/aws-sdk) - For connecting to DynamoDB databases.
-* [dynamodb-geo](https://www.npmjs.com/package/dynamodb-geo) - For making geospatial queries.
 * [botgram](https://www.npmjs.com/package/botgram) - Telegram bot framework.
 
 ## Authors
