@@ -2,11 +2,21 @@ service: NearBot
 app: nearbot-${self:provider.stage}
 tenant: elizabethdev
 
+plugins:
+  - serverless-plugin-browserifier
+package:
+  individually: true
+
+custom:
+  browserify:
+    exclude:
+      - aws-sdk
+      - aws-sdk/clients/dynamodb
+
 provider:
   name: aws
   runtime: nodejs8.10
   region: eu-west-1
-  #endpointType: REGIONAL
 
   iamRoleStatements:
     - Effect: "Allow"
