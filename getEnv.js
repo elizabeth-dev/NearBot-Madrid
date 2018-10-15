@@ -7,5 +7,6 @@ module.exports.getEnvVars = () => ({
 	MAPS_SIGNING_SECRET: process.env.MAPS_SIGNING_SECRET,
 	EMT_ID_CLIENT: process.env.EMT_ID_CLIENT,
 	EMT_PASS_KEY: process.env.EMT_PASS_KEY,
-	NEARBOT_VERSION: process.env.NEARBOT_VERSION
+	NEARBOT_VERSION: process.env.NEARBOT_VERSION,
+	TIMEZONE: process.env.TIMEZONE
 })

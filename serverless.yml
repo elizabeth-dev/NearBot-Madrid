@@ -38,6 +38,7 @@ functions:
       EMT_ID_CLIENT: ${file(./getEnv.js):getEnvVars.EMT_ID_CLIENT}
       EMT_PASS_KEY: ${file(./getEnv.js):getEnvVars.EMT_PASS_KEY}
       NEARBOT_VERSION: ${file(./getEnv.js):getEnvVars.NEARBOT_VERSION}
+      TIMEZONE: ${file(./getEnv.js):getEnvVars.TIMEZONE}
     events:
       - http:
           path: NearBot_Madrid
