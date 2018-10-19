@@ -10,3 +10,4 @@ databases/*.json
 
 # Env config
 *.env
+.gitsecret/keys/random_seed
