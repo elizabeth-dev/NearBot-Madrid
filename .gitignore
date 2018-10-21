@@ -10,4 +10,8 @@ databases/*.json
 
 # Env config
 *.env
+
+# SSL certificates
+ssl/*.pem
+
 .gitsecret/keys/random_seed
