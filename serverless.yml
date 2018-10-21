@@ -30,6 +30,8 @@ provider:
     - Effect: "Allow"
       Action:
         - dynamodb:Scan
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
       Resource: "arn:aws:dynamodb:eu-west-1:*:*"
 
 functions:
