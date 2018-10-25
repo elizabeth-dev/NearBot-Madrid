@@ -9,7 +9,7 @@ jspm_packages
 databases/*.json
 
 # Env config
-*.env
+env.yml
 
 # SSL certificates
 ssl/*.pem
