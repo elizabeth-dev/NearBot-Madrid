@@ -27,7 +27,6 @@
   },
   "devDependencies": {
     "browserify": "^16.2.3",
-    "dotenv": "^6.1.0",
     "eslint": "^5.7.0",
     "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^3.8.0",

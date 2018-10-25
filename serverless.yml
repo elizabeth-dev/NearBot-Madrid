@@ -19,6 +19,7 @@ custom:
     host: 0.0.0.0
     region: eu-west-1
     httpsProtocol: "ssl"
+  environment: ${file(env.yml):${self:provider.stage}, file(env.yml):all}
 
 
 provider:
@@ -42,13 +43,14 @@ functions:
     memorySize: 512
     timeout: 10
     environment:
-      TELEGRAM_TOKEN: ${file(./getEnv.js):getEnvVars.TELEGRAM_TOKEN_${self:provider.stage}}
-      MAPS_TOKEN: ${file(./getEnv.js):getEnvVars.MAPS_TOKEN_${self:provider.stage}}
-      MAPS_SIGNING_SECRET: ${file(./getEnv.js):getEnvVars.MAPS_SIGNING_SECRET}
-      EMT_ID_CLIENT: ${file(./getEnv.js):getEnvVars.EMT_ID_CLIENT}
-      EMT_PASS_KEY: ${file(./getEnv.js):getEnvVars.EMT_PASS_KEY}
-      NEARBOT_VERSION: ${file(./getEnv.js):getEnvVars.NEARBOT_VERSION}
-      TIMEZONE: ${file(./getEnv.js):getEnvVars.TIMEZONE}
+      NODE_ENV: ${self:provider.stage}
+      TELEGRAM_TOKEN: ${self:custom.environment.TELEGRAM_TOKEN}
+      MAPS_TOKEN: ${self:custom.environment.MAPS_TOKEN}
+      MAPS_SIGNING_SECRET: ${self:custom.environment.MAPS_SIGNING_SECRET}
+      EMT_ID_CLIENT: ${self:custom.environment.EMT_ID_CLIENT}
+      EMT_PASS_KEY: ${self:custom.environment.EMT_PASS_KEY}
+      NEARBOT_VERSION: ${self:custom.environment.NEARBOT_VERSION}
+      TIMEZONE: ${self:custom.environment.TIMEZONE}
     events:
       - http:
           path: NearBot_Madrid
@@ -58,4 +60,4 @@ functions:
       NearBot_city: Madrid
       NearBot_resource: Function
       NearBot_environment: ${self:provider.stage}
-      NearBot_version: ${file(./getEnv.js):getEnvVars.NEARBOT_VERSION}
+      NearBot_version: ${self:custom.environment.NEARBOT_VERSION}
