@@ -1,6 +1,6 @@
 {
   "name": "nearbot-madrid",
-  "version": "2.0.0-dev",
+  "version": "2.0.0",
   "description": "Find nearby places in Madrid easily using Telegram",
   "main": "lib/handler.js",
   "scripts": {
