@@ -7,3 +7,11 @@ jspm_packages
 
 # Databases
 databases/*.json
+
+# Env config
+env.yml
+
+# SSL certificates
+ssl/*.pem
+
+.gitsecret/keys/random_seed

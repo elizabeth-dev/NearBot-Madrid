@@ -1,44 +1,63 @@
 service: NearBot
-app: nearbot
+app: nearbot-${self:provider.stage}
 tenant: elizabethdev
+
+plugins:
+  - serverless-plugin-browserifier
+  - serverless-offline
+
+package:
+  individually: true
+
+custom:
+  browserify:
+    exclude:
+      - aws-sdk
+      - aws-sdk/clients/dynamodb
+  serverless-offline:
+    port: 8443
+    host: 0.0.0.0
+    region: eu-west-1
+    httpsProtocol: "ssl"
+  environment: ${file(env.yml):${self:provider.stage}, file(env.yml):all}
+
 
 provider:
   name: aws
   runtime: nodejs8.10
   region: eu-west-1
-  #endpointType: REGIONAL
 
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - dynamodb:GetItem
-        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
       Resource: "arn:aws:dynamodb:eu-west-1:*:*"
-
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-
-# you can add packaging information here
-#package:
-#  include:
-#    - include-me.js
-#    - include-me-dir/**
-#  exclude:
-#    - exclude-me.js
-#    - exclude-me-dir/**
 
 functions:
   NearBot_Madrid:
     name: ${self:provider.stage}-NearBot_Madrid
     description: Madrid instance of NearBot
-    handler: handler.telegram
-    memorySize: 256
+    handler: lib/handler.telegram
+    memorySize: 512
+    timeout: 10
+    environment:
+      NODE_ENV: ${self:provider.stage}
+      TELEGRAM_TOKEN: ${self:custom.environment.TELEGRAM_TOKEN}
+      MAPS_TOKEN: ${self:custom.environment.MAPS_TOKEN}
+      MAPS_SIGNING_SECRET: ${self:custom.environment.MAPS_SIGNING_SECRET}
+      EMT_ID_CLIENT: ${self:custom.environment.EMT_ID_CLIENT}
+      EMT_PASS_KEY: ${self:custom.environment.EMT_PASS_KEY}
+      NEARBOT_VERSION: ${self:custom.environment.NEARBOT_VERSION}
+      TIMEZONE: ${self:custom.environment.TIMEZONE}
     events:
       - http:
           path: NearBot_Madrid
           method: post
-
-#    Define function environment variables here
-#    environment:
-#      variable2: value2
+    tags:
+      Project: NearBot
+      NearBot_city: Madrid
+      NearBot_resource: Function
+      NearBot_environment: ${self:provider.stage}
+      NearBot_version: ${self:custom.environment.NEARBOT_VERSION}

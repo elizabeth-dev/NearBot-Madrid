@@ -5,8 +5,9 @@ Find near places in Madrid simply with NearBot, a bot that lets you to ask for a
 * BiciMAD stations (public bike renting)
 * Drinking fountains
 * Public bathrooms
+* Public wifi hotspots
 
-In the future, we will add some new categories, like ATMs, public Wi-Fi acces points, vegan food restaurants, and many other that would be handy to find quickly.
+In the future, we will add some new categories, like ATMs, vegan food restaurants, fast food restaurants, and many other that would be handy to find quickly.
 
 ## Built and ran with
 * __Node.js v8.10__ - Runtime
@@ -22,7 +23,6 @@ In the future, we will add some new categories, like ATMs, public Wi-Fi acces po
 
 ## Dependencies
 * [aws-sdk](https://www.npmjs.com/package/aws-sdk) - For connecting to DynamoDB databases.
-* [dynamodb-geo](https://www.npmjs.com/package/dynamodb-geo) - For making geospatial queries.
 * [botgram](https://www.npmjs.com/package/botgram) - Telegram bot framework.
 
 ## Authors
